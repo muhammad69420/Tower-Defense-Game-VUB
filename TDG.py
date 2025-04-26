@@ -1,4 +1,5 @@
 import pygame
+import math
 
 pygame.init()
 
@@ -13,12 +14,13 @@ pygame.display.set_caption("Tower Defense Game")
 
 # clock
 clock = pygame.time.Clock()
-FPS = 40
+FPS = 180  #reduce FPS to 40 for gameplay, 180 for testing
 
 # set up image
 TILE_SIZE = 64
 map = pygame.image.load("mapTBC.png")
 
+Reached = False
 
 global font
 font=pygame.font.Font(None,20)
@@ -63,6 +65,24 @@ class Enemy:
         
         pass
 
+class Bases:
+    def __init__(self, x, y, image, health):
+        self.x = x
+        self.y = y
+        self.image = image
+        self.health = health
+
+    def draw(self, surface):
+        surface.blit(self.image, (self.x, self.y))
+
+base_image = pygame.image.load("base1.png")
+base = Bases(832, 480, base_image, health=10)
+baseCoordinatesX = 896
+baseCoordinatesY = 512
+
+base_enemy = pygame.image.load("EnemySpawn.png")
+Spawn = Bases(0, 0, base_enemy, health=100000)
+
 # object enemy
 enemy_image = pygame.image.load("Enemy.png")
 path = [(0, 32), (736, 32), (736, 256), (96, 256), (96, 512), (960, 512)]
@@ -76,12 +96,15 @@ enemy = Enemy(0, 32, enemy_image, health=100, speed=2, path=path, damage=10)
         self.rect = self.image.get_rect(topleft=(x, y))
 
     def attack(self):
-        
+        # orient tower towards enemy, check range, and deal damage + animation
         pass
 
     def draw(self, surface):
         surface.blit(self.image, (self.x, self.y))
 """ 
+
+# define level
+
 
 # define base
 class Base:
@@ -95,15 +118,6 @@ class Base:
         surface.blit(self.image, (self.x, self.y))
 
 
-"""base_image = pygame.image.load("base.png")
-base = Base(832, 512, base_image, health=100)
-
-def base_damage():
-    if base.health <= 0:
-        print("Game Over")
-        pygame.quit()
-        exit()
-"""
 # set up gameloop
 run = True
 while run:
@@ -116,8 +130,25 @@ while run:
 
     WINDOW.blit(map, (0, 0))   
     enemy.draw(WINDOW)         
-    write("Health: " + str(enemy.health), (enemy.x, enemy.y - 20), (255, 0, 0))
-    write("Base health: " + str(100), (832, 32), (255, 0, 0))
+    write("Health: " + str(enemy.health), (enemy.x, enemy.y - 20), (255, 0, 0))     # Health bar above enemy for testing
+    write("Base health: " + str(base.health), (832, 32), (255, 0, 0))
+    base.draw(WINDOW)
+    Spawn.draw(WINDOW)
+
+    distance = math.hypot(enemy.x - baseCoordinatesX, enemy.y - baseCoordinatesY)
+
+    if distance < 5 and not Reached:
+        base.health -= enemy.damage
+        print(f"Reached target! Health now: {base.health}")
+        Reached = True  # Prevent repeating
+
+    if base.health <= 0:
+        write("Game Over", (WIDTH // 2 - 50, HEIGHT // 2), (255, 0, 0))
+        base.health = 0
+        pygame.display.update()
+        pygame.time.delay(10000) 
+        pygame.quit()
+        exit()
 
     # Update the display
     pygame.display.update()
