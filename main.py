@@ -1,14 +1,5 @@
 import pygame
 import math
-from assets import load_image, tower_images, enemy_images, game_map_1, UI_images
-from tower import Tower
-from enemy import Enemy
-from assets import level_data
-from wavemanager import LevelManager
-
-level_manager = LevelManager(level_data["level1"])
-
-
 
 
 
@@ -20,6 +11,19 @@ print("Starting game")
 WIDTH, HEIGHT = 960, 640
 WINDOW = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Tower Defense Game")
+
+from assets import load_image, tower_images, enemy_images, game_map_1, UI_images
+from tower import Tower
+from enemy import Enemy
+from assets import level_data
+from wavemanager import LevelManager
+from assets import tower_stats
+from assets import game_map_1
+
+
+level_manager = LevelManager(level_data)
+
+
 
 # clock
 clock = pygame.time.Clock()
@@ -52,7 +56,7 @@ def get_grid_position(mouse_x, mouse_y):
     return (grid_x, grid_y)
 
 # object enemy
-enemy_image = pygame.image.load("Enemy.png")
+enemy_image = pygame.image.load("assets/Enemy.png")
 path = [(0, 32), (736, 32), (736, 256), (96, 256), (96, 512), (960, 512)]
 enemy = Enemy(0, 32, enemy_image, health=100, speed=0.3, path=path, damage=10)
 
@@ -81,34 +85,16 @@ for x, y in path:
     grid_x = (x // TILE_SIZE) * TILE_SIZE
     grid_y = (y // TILE_SIZE) * TILE_SIZE
     path_tiles.append((grid_x, grid_y))
-    
-# Voeg extra paden toe voor het complete pad
-# We voegen horizontale en verticale secties toe tussen de punten
-for i in range(len(path) - 1):
-    x1, y1 = path[i]
-    x2, y2 = path[i + 1]
-    
-    # Als horizontale beweging
-    if y1 == y2:
-        step = 1 if x2 > x1 else -1
-        for x in range(x1, x2, step * TILE_SIZE):
-            grid_x = (x // TILE_SIZE) * TILE_SIZE
-            grid_y = (y1 // TILE_SIZE) * TILE_SIZE
-            if (grid_x, grid_y) not in path_tiles:
-                path_tiles.append((grid_x, grid_y))
-    
-    # Als verticale beweging
-    if x1 == x2:
-        step = 1 if y2 > y1 else -1
-        for y in range(y1, y2, step * TILE_SIZE):
-            grid_x = (x1 // TILE_SIZE) * TILE_SIZE
-            grid_y = (y // TILE_SIZE) * TILE_SIZE
-            if (grid_x, grid_y) not in path_tiles:
-                path_tiles.append((grid_x, grid_y))
 
+if (grid_x, grid_y) in path_tiles:
+   return False  #moet fixen
+  
 
-class coins:
-    def __init__(self, start_amount, generation_rate):
+#waarom een klasse voor coins?
+
+"""
+#class coins:  
+    def __init__(self, start_amount, generation_rate):    
         self.amount = start_amount
         self.generation_rate = generation_rate
         self.last_time = pygame.time.get_ticks()
@@ -126,8 +112,12 @@ coins = coins(100, 10)
 # coin icon toevoegen
 coin_icon = pygame.image.load("coin_image.jpg")
 coin_icon = pygame.transform.scale(coin_icon, (24, 24))
+"""
 
-class menu:  
+def coins(start_amount, generation_rate):    #maak later
+    pass
+
+class menu:    #geen nut op een klasse van te maken?
     def __init__(self, x, y, width, height):
         # de rechthoek van het menu
         self.rect = pygame.Rect(x, y, width, height)
@@ -226,137 +216,107 @@ ghost_image = None
 
 
 # set up gameloop
+
+#al voor een deel herschreven maar naamgeving trekt nog op niks
 run = True
 while run:
     clock.tick(FPS)
-    
-    # Voor preview van de toren-plaatsing
-    mouse_x, mouse_y = pygame.mouse.get_pos()
-    grid_x, grid_y = get_grid_position(mouse_x, mouse_y)
-    
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
-
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            mouse_pos = pygame.mouse.get_pos()  # Positie van de muisklik
-
-            # Klik op menu-icoon
-            if menu_icon_rect.collidepoint(mouse_pos):
-                game_menu.visible = not game_menu.visible  # Zet het menu zichtbaar of onzichtbaar
-
-            # Klik op menu-opties als menu zichtbaar is
-            elif game_menu.visible:
-                selected_tower_type, cost = game_menu.handle_click(mouse_pos, coins.amount)
-                if cost > 0:  # Als toren is gekocht, trek munten af
-                    coins.amount -= cost
-                    game_menu.visible = False  # Verberg het menu na aankoop
-                    
-                    # Stel het juiste ghost-image in voor de preview
-                    if selected_tower_type == "tower1":
-                        ghost_image = tower_images["tower1"][0].copy()
-                        ghost_image.set_alpha(150)  # Maak het half-transparant
-                    elif selected_tower_type == "tower2":
-                        ghost_image = tower_images["tower2"][0].copy()
-                        ghost_image.set_alpha(150)
-                    elif selected_tower_type == "tower3":
-                        ghost_image = tower_images["tower3"][0].copy()
-                        ghost_image.set_alpha(150)
-
-
-            # Klik op de map om toren te plaatsen als er een toren geselecteerd is
-            elif selected_tower_type:
-                # Bepaal de gridpositie
-                grid_x, grid_y = get_grid_position(mouse_pos[0], mouse_pos[1])
+    # event handling (all input goes here)
+    def handle_events():
+        mouse_x, mouse_y = pygame.mouse.get_pos()  # user input
+        global tower_preview, ghost_image
+        grid_x, grid_y = get_grid_position(mouse_x, mouse_y) 
+        global run, selected_tower_type, tower_preview, ghost_image
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_x, mouse_y = event.pos
+                grid_x, grid_y = get_grid_position(mouse_x, mouse_y)
                 
-                # Controleer of deze positie geldig is
-                if is_valid_tower_position(grid_x, grid_y):
-                    if selected_tower_type == "tower1":
-                        towers.append(Tower(grid_x, grid_y, tower_images["tower1"], 100, 20))
+                # Check if the menu icon was clicked
+                if menu_icon_rect.collidepoint(event.pos):
+                    game_menu.visible = not game_menu.visible
+                    print("Menu icon clicked")
+
+        if game_menu.visible:
+            for option in game_menu.tower_options:
+                if option["button"].collidepoint(mouse_x, mouse_y):
+                    selected_tower_type = option["name"]
+                    print(f"Selected tower type: {selected_tower_type}")
+                    break
+            # Handle tower placement
+            if selected_tower_type and event.type == pygame.MOUSEBUTTONDOWN:
+                # Check if the mouse is clicked
+                if event.button == 1:  # Left mouse button
+                    # Check if the position is valid for placing a tower
+                    if is_valid_tower_position(grid_x, grid_y):
+                        # Create a new tower and add it to the list
+                        tower_image = tower_images[selected_tower_type]
+                        ghost_image = tower_image[0]
+                        stats = tower_stats[selected_tower_type]
+                        tower = Tower(grid_x, grid_y, tower_images[selected_tower_type], stats["range"], stats["damage"])
+                        level_manager.towers.append(tower)
                         placed_tower_positions.append((grid_x, grid_y))
-                    elif selected_tower_type == "tower2":
-                        towers.append(Tower(grid_x, grid_y, tower_images["tower2"], 120, 15))
-                        placed_tower_positions.append((grid_x, grid_y))
-                    elif selected_tower_type == "tower3":
-                        towers.append(Tower(grid_x, grid_y, tower_images["tower3"], 140, 10))
-                        placed_tower_positions.append((grid_x, grid_y))
+                        ghost_image = None
+                        selected_tower_type = None
+        
 
-    selected_tower_type = None
-    ghost_image = None
-    game_menu.visible = False
-else:
-    print("Ongeldige positie voor toren!")
+    # update game logic (enemies, towers, etc.)
+    def update_game(): 
+        level_manager.update()
+        # Update coins
+        coins.update()
+        for tower in level_manager.towers:
+            tower.update(level_manager.enemies)
+
+        for enemy in level_manager.enemies:
+            if enemy.reached_goal:
+                base.health -= enemy.damage
+                level_manager.enemies.remove(enemy)
+                if base.health <= 0:
+                    print("Game Over")
+                    run = False
+
+        if getattr(level_manager, 'game_over', False):
+            print("Game Over")
+            run = False
+        if getattr(level_manager, 'game_won', False):
+            print("Game Won")
+            run = False
+    # render everything (map tower UI enemies etc)
+    def render():
+        WINDOW.blit(map, (0, 0))
+        # Draw the base
+        base.draw(WINDOW)
+        # Draw the spawn point
+        Spawn.draw(WINDOW)
+        
+        # Draw the towers
+        for tower in level_manager.towers:
+            tower.draw(WINDOW)
+        
+        # Draw the enemies
+        for enemy in level_manager.enemies:
+            enemy.draw(WINDOW)
+        
+        # Draw the coins
+        WINDOW.blit(coin_icon, (10, 10))
+        write(f"Coins: {coins.amount}", (40, 10))
+
+        # Draw the menu icon
+        WINDOW.blit(menu_icon, (10, 40))
+        # Draw the menu
+        game_menu.draw(WINDOW)
+        # Draw the ghost image if it exists
+        if ghost_image:
+            ghost_rect = ghost_image.get_rect(topleft=(grid_x, grid_y))
+            WINDOW.blit(ghost_image, ghost_rect.topleft)
 
 
-    enemy.move()
-
-    WINDOW.blit(map, (0, 0))
-    
-    def draw_grid():
-    # Grote gridlijnen
-        for x in range(0, WIDTH, TILE_SIZE):
-            pygame.draw.line(WINDOW, (150, 150, 150), (x, 0), (x, HEIGHT))
-    for y in range(0, HEIGHT, TILE_SIZE):
-        pygame.draw.line(WINDOW, (150, 150, 150), (0, y), (WIDTH, y))
-
-    # Subgrids van 16 pixels
-    sub_tile_size = 16
-    for x in range(0, WIDTH, sub_tile_size):
-        pygame.draw.line(WINDOW, (200, 200, 200), (x, 0), (x, HEIGHT), 1)
-    for y in range(0, HEIGHT, sub_tile_size):
-        pygame.draw.line(WINDOW, (200, 200, 200), (0, y), (WIDTH, y), 1)
-
-    
-    # Teken een duidelijke highlight voor de huidige muispositie als er een toren geselecteerd is
-    if selected_tower_type and ghost_image:
-        if is_valid_tower_position(grid_x, grid_y):
-            # Groene highlight voor geldige posities
-            pygame.draw.rect(WINDOW, (0, 255, 0, 100), (grid_x, grid_y, TILE_SIZE, TILE_SIZE), 2)
-            # Toon de preview van de toren
-            WINDOW.blit(ghost_image, (grid_x, grid_y))
-        else:
-            # Rode highlight voor ongeldige posities
-            pygame.draw.rect(WINDOW, (255, 0, 0, 100), (grid_x, grid_y, TILE_SIZE, TILE_SIZE), 2)
-    
-    enemy.draw(WINDOW)
-    write("Health: " + str(enemy.health), (enemy.x, enemy.y - 20), (255, 0, 0))
-    write("Base health: " + str(base.health), (832, 32), (255, 0, 0))
-    base.draw(WINDOW)
-    Spawn.draw(WINDOW)
-
-    # Teken alle torens
-    for tower in towers:
-        tower.draw(WINDOW)
-        tower.attack([enemy])  # laat toren vijand aanvallen als binnen bereik
-
-    coin_icon_x = WIDTH - 130
-    coin_icon_y = 60
-    WINDOW.blit(coin_icon, (coin_icon_x, coin_icon_y))
-    coins.update()
-    write(str(coins.amount), (coin_icon_x + 30, coin_icon_y + 4), (255, 215, 0))
-
-    # Menu-icoon tekenen
-    WINDOW.blit(menu_icon, (menu_icon_rect.x, menu_icon_rect.y))
-
-    # Menu tekenen
-    game_menu.draw(WINDOW)
-
-    distance = math.hypot(enemy.x - baseCoordinatesX, enemy.y - baseCoordinatesY)
-
-    if distance < 5 and not Reached:
-        base.health -= enemy.damage
-        print(f"Reached target! Health now: {base.health}")
-        Reached = True  # Prevent repeating
-
-    if base.health <= 0:
-        write("Game Over", (WIDTH // 2 - 50, HEIGHT // 2), (255, 0, 0))
-        base.health = 0
-        pygame.display.update()
-        pygame.time.delay(10000)
-        pygame.quit()
-        exit()
-
-    draw_grid()
     pygame.display.update()
-
+    # Call the functions
+    handle_events()
+    update_game()
+    render()
 pygame.quit()
