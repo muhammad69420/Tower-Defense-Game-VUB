@@ -43,6 +43,9 @@ def load_frames_from_sheet(path, num_frames):
     return [sheet.subsurface(pygame.Rect(i * frame_width, 0, frame_width, frame_height)) for i in range(num_frames)]
 
 
+coin_icon = pygame.image.load("assets/coin_image.jpg")
+coin_icon = pygame.transform.scale(coin_icon, (24, 24))
+
 global font
 font = pygame.font.Font(None, 20)
 
@@ -58,7 +61,6 @@ def get_grid_position(mouse_x, mouse_y):
 # object enemy
 enemy_image = pygame.image.load("assets/Enemy.png")
 path = [(0, 32), (736, 32), (736, 256), (96, 256), (96, 512), (960, 512)]
-enemy = Enemy(0, 32, enemy_image, health=100, speed=0.3, path=path, damage=10)
 
 class Bases:
     def __init__(self, x, y, image, health):
@@ -70,12 +72,12 @@ class Bases:
     def draw(self, surface):
         surface.blit(self.image, (self.x, self.y))
 
-base_image = pygame.image.load("base1.png")
+base_image = pygame.image.load("assets/base1.png")
 base = Bases(832, 480, base_image, health=10)
 baseCoordinatesX = 896
 baseCoordinatesY = 512
 
-base_enemy = pygame.image.load("EnemySpawn.png")
+base_enemy = pygame.image.load("assets/EnemySpawn.png")
 Spawn = Bases(0, 0, base_enemy, health=100000)
 
 # Dit zijn de paden waar de vijand loopt - op deze tiles kan geen toren worden geplaatst
@@ -86,8 +88,6 @@ for x, y in path:
     grid_y = (y // TILE_SIZE) * TILE_SIZE
     path_tiles.append((grid_x, grid_y))
 
-if (grid_x, grid_y) in path_tiles:
-   return False  #moet fixen
   
 
 #waarom een klasse voor coins?
@@ -113,9 +113,11 @@ coins = coins(100, 10)
 coin_icon = pygame.image.load("coin_image.jpg")
 coin_icon = pygame.transform.scale(coin_icon, (24, 24))
 """
+coins = 100
+last_coin_time = pygame.time.get_ticks()
 
-def coins(start_amount, generation_rate):    #maak later
-    pass
+
+
 
 class menu:    #geen nut op een klasse van te maken?
     def __init__(self, x, y, width, height):
@@ -140,6 +142,11 @@ class menu:    #geen nut op een klasse van te maken?
         "name": "tower3",
         "price": 200,
         "button": pygame.Rect(x + 10, y + 120, width - 20, 30)
+        },
+        {
+        "name": "tower4",
+        "price": 250,
+        "button": pygame.Rect(x + 10, y + 160, width - 20, 30)
         }
     ]
 
@@ -180,7 +187,7 @@ class menu:    #geen nut op een klasse van te maken?
         return (None, 0)
    
 
-menu_icon = pygame.image.load("menu_images.png")
+menu_icon = pygame.image.load("assets/menu_images.png")
 menu_icon = pygame.transform.scale(menu_icon, (48, 48))
 menu_icon_rect = pygame.Rect(0, 0, 48, 48)
 
@@ -250,7 +257,8 @@ while run:
                 # Check if the mouse is clicked
                 if event.button == 1:  # Left mouse button
                     # Check if the position is valid for placing a tower
-                    if is_valid_tower_position(grid_x, grid_y):
+                    tower_price = tower_stats[selected_tower_type]["cost"]
+                    if coins >= tower_price and is_valid_tower_position(grid_x, grid_y):
                         # Create a new tower and add it to the list
                         tower_image = tower_images[selected_tower_type]
                         ghost_image = tower_image[0]
@@ -260,13 +268,13 @@ while run:
                         placed_tower_positions.append((grid_x, grid_y))
                         ghost_image = None
                         selected_tower_type = None
-        
+                        coins -= tower_price
 
     # update game logic (enemies, towers, etc.)
     def update_game(): 
         level_manager.update()
-        # Update coins
-        coins.update()
+        
+        
         for tower in level_manager.towers:
             tower.update(level_manager.enemies)
 
@@ -302,7 +310,7 @@ while run:
         
         # Draw the coins
         WINDOW.blit(coin_icon, (10, 10))
-        write(f"Coins: {coins.amount}", (40, 10))
+        write(f"Coins: {coins}", (40, 10))
 
         # Draw the menu icon
         WINDOW.blit(menu_icon, (10, 40))
@@ -313,7 +321,10 @@ while run:
             ghost_rect = ghost_image.get_rect(topleft=(grid_x, grid_y))
             WINDOW.blit(ghost_image, ghost_rect.topleft)
 
-
+    current_time = pygame.time.get_ticks()
+    if current_time - last_coin_time >= 1000:
+        coins += 10
+        last_coin_time = current_time
     pygame.display.update()
     # Call the functions
     handle_events()
