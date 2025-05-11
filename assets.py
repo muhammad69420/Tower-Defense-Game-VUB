@@ -23,9 +23,17 @@ tower_stats = {
 }
 
 enemy_images = {
-    "enemy1": pygame.image.load("assets/Enemy.png").convert_alpha(),
-
+    "enemy1": [pygame.image.load("assets/Armored Skeleton-attack01.png").convert_alpha()],
+    "enemy2": [pygame.image.load("assets/Archer-Attack01.png").convert_alpha()],
+    "enemy3": [pygame.image.load("assets/Soldier-Attack01.png").convert_alpha()],
 }
+
+def load_first_frame(path, total_frames):
+    sheet = pygame.image.load(path).convert_alpha()
+    first_frame = sheet.subsurface((0, 0, 100, 100))
+    return [first_frame]
+
+
 
 game_map_1 = pygame.image.load("assets/mapTBC.png").convert_alpha()
 
@@ -37,6 +45,8 @@ UI_images = {
     "UI_frame2": pygame.image.load("assets/UI_frame2.png").convert_alpha(),
     "UI_frame3": pygame.image.load("assets/UI_frame3.png").convert_alpha(),
     "UI_frame4": pygame.image.load("assets/UI_frame4.png").convert_alpha(),
+    "coin_icon": pygame.image.load("assets/coin_image.jpg").convert_alpha(),
+    "mapTBC": pygame.image.load("assets/mapTBC.png").convert_alpha(),
 
 }
 
