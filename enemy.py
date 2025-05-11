@@ -62,3 +62,8 @@ class Enemy:
     
     def is_alive(self):
         return self.health > 0
+
+    def die(self):
+        #remove enemy from game
+        
+        pass
