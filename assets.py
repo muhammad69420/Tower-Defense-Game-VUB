@@ -15,6 +15,13 @@ tower_images = {
 
 }
 
+tower_stats = {
+    "tower1": {"range": 100, "damage": 10, "cost": 100},
+    "tower2": {"range": 125, "damage": 15, "cost": 150},
+    "tower3": {"range": 175, "damage": 20, "cost": 200},
+    "tower4": {"range": 200, "damage": 25, "cost": 250},
+}
+
 enemy_images = {
     "enemy1": pygame.image.load("assets/Enemy.png").convert_alpha(),
 
