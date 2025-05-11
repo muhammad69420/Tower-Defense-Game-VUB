@@ -11,6 +11,8 @@ class LevelManager:
         self.wave = self.level_data[self.current_level]['waves']
         self.wave_index = 0
         self.pending_spawns = []
+        self.game_over = False
+        self.game_won = False
         self.spawn_timer = pygame.time.get_ticks()
         self.spawn_interval = 1000  # milliseconds
         self.pending_spawns = []
@@ -65,17 +67,17 @@ class LevelManager:
     def update(self):
         # Spawn enemies based on timer
         current_time = pygame.time.get_ticks()
-        if self.pending_spawns and current_time - self.spawn_timer >= self.spawn_interval:
+        if self.pending_spawns:
             enemy_type, count = self.pending_spawns[0]
 
-        if current_time - self.spawn_timer >= self.spawn_interval:
-            self.spawn_timer = current_time
-            self.enemies.append(self.spawn_enemy(enemy_type))
+            if current_time - self.spawn_timer >= self.spawn_interval:
+                self.spawn_timer = current_time
+                self.enemies.append(self.spawn_enemy(enemy_type))
 
-            if count > 1:
-                self.pending_spawns[0] = (enemy_type, count - 1)
-            else:
-                self.pending_spawns.pop(0)
+                if count > 1:
+                    self.pending_spawns[0] = (enemy_type, count - 1)
+                else:
+                    self.pending_spawns.pop(0)
 
         #update all enemies
         for enemy in self.enemies:
