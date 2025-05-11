@@ -13,6 +13,12 @@ class LevelManager:
         self.pending_spawns = []
         self.spawn_timer = pygame.time.get_ticks()
         self.spawn_interval = 1000  # milliseconds
+        self.pending_spawns = []
+
+        if self.wave:
+            wave_info = self.wave[self.wave_index]
+            self.pending_spawns = [(wave_info['type'], wave_info['count'])]
+            self.spawn_interval = wave_info['interval']
 
 
     def load_level(self):
@@ -61,28 +67,32 @@ class LevelManager:
         current_time = pygame.time.get_ticks()
         if self.pending_spawns and current_time - self.spawn_timer >= self.spawn_interval:
             enemy_type, count = self.pending_spawns[0]
+
+        if current_time - self.spawn_timer >= self.spawn_interval:
             self.spawn_timer = current_time
+            self.enemies.append(self.spawn_enemy(enemy_type))
 
-        self.enemies.append(self.spawn_enemy(enemy_type))  # Use a method to spawn
+            if count > 1:
+                self.pending_spawns[0] = (enemy_type, count - 1)
+            else:
+                self.pending_spawns.pop(0)
 
-        if count > 1:
-            self.pending_spawns[0] = (enemy_type, count - 1)
-        else:
-            self.pending_spawns.pop(0)
-
-        # Update enemies
-        for enemy in self.enemies[:]:
+        #update all enemies
+        for enemy in self.enemies:
             enemy.update()
-        if not enemy.is_alive():
-            self.enemies.remove(enemy)
+            if not enemy.is_alive():
+                self.enemies.remove(enemy)
 
-# Update towers
+        #update towers
         for tower in self.towers:
             tower.update(self.enemies)
-        # Wave clear check
+
+        # Check for game over or win conditions
         if not self.enemies and not self.pending_spawns:
-            if self.wave_index + 1 < len(self.level_data[self.current_level]['waves']):
+            if self.wave_index + 1 < len(self.wave):
                 self.wave_index += 1
-                self.pending_spawns = list(self.level_data[self.current_level]['waves'][self.wave_index])
+                next_wave = self.wave[self.wave_index]
+                self.pending_spawns = [(next_wave['type'], next_wave['count'])]
+                self.spawn_interval = next_wave['interval']
             else:
                 self.game_won = True
